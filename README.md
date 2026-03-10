@@ -78,27 +78,32 @@ Tesseract is the only OCR-based tool — it re-reads text from rasterized images
 ```
 pdf-to-docx-benchmarks/
 ├── README.md
-├── notebooks/
-│   ├── final_comparison.ipynb       # Cross-library charts and summary
-│   ├── pypdf_benchmark.ipynb        # PyMuPDF + python-docx
-│   ├── pdfplumber_benchmark.ipynb   # pdfplumber + python-docx
-│   ├── camelot_benchmark.ipynb      # Camelot (lattice + stream)
-│   ├── libreoffice_benchmark.ipynb  # LibreOffice soffice
-│   ├── pdf2docx_benchmark.ipynb     # pdf2docx
-│   ├── docling_benchmark.ipynb      # Docling (ML-based)
-│   └── tesseract_benchmark.ipynb    # Tesseract OCR
-└── outputs/
-    ├── pypdf/          # PDFs + DOCXs + charts
-    ├── pdfplumber/
-    ├── camelot/        # Lattice + stream + v2 outputs
-    ├── libreoffice/
-    ├── pdf2docx/
-    ├── docling/
-    ├── tesseract/
-    └── *.png           # Cross-library comparison charts
+├── final_comparison.ipynb        # Cross-library charts and summary
+├── *.png                         # Comparison charts (heatmap, speed, two-column)
+├── pdf2docx/
+│   ├── benchmark.ipynb
+│   └── outputs/
+├── pymupdf/
+│   ├── benchmark.ipynb
+│   └── outputs/
+├── pdfplumber/
+│   ├── benchmark.ipynb
+│   └── outputs/
+├── tesseract/
+│   ├── benchmark.ipynb
+│   └── outputs/
+├── docling/
+│   ├── benchmark.ipynb
+│   └── outputs/
+├── camelot/
+│   ├── benchmark.ipynb
+│   └── outputs/
+└── libreoffice/
+    ├── benchmark.ipynb
+    └── outputs/
 ```
 
-Each notebook is self-contained: generates test PDFs, runs conversions, measures timing, and produces comparison charts.
+Each library folder contains its benchmark notebook and an `outputs/` directory with the generated test PDFs, converted DOCX files (v1 + v2 layout-preserved), and charts.
 
 ## Test Scenarios
 
@@ -123,5 +128,6 @@ brew install tesseract poppler
 brew install --cask libreoffice
 
 # Run any notebook
-jupyter notebook notebooks/final_comparison.ipynb
+jupyter notebook final_comparison.ipynb
+jupyter notebook pymupdf/benchmark.ipynb
 ```
