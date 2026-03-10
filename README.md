@@ -18,27 +18,17 @@
 
 ## Quality
 
-| Library | Tables | Images | Layout | Two-Column | Notes |
-|---------|--------|--------|--------|------------|-------|
-| PyMuPDF | None | Extractable | Coordinates | v2 | Fastest, text-only extraction |
-| pdfplumber | Structured | No | Word-level | v2 | MIT, good table detection |
-| Camelot | Excellent | No | pdfminer | v2 | Best for table-heavy docs |
-| LibreOffice | Native | Native | Native | Native | Highest fidelity, needs soffice binary |
-| pdf2docx | Excellent | Good | Good | Native | Fails on dense tables (O(n^2) table detection) |
-| Docling | Partial | No | ML-detected | v2 | Slow, ML-based layout analysis |
-| Tesseract | None | None | OCR boxes | v2 | Only option for scanned PDFs |
+| Library | Word Recall | Tables | Images | Two-Column | Notes |
+|---------|-------------|--------|--------|------------|-------|
+| PyMuPDF | 100% | No detection, flat text | Extractable | v2 (coordinate-based) | Fastest, text-only extraction |
+| pdfplumber | 100% | Detected via line intersections | No | v2 (word bounding boxes) | MIT, good table detection |
+| Camelot | 100% | Lattice + stream detection | No | v2 (pdfminer bounding boxes) | Best for table-heavy docs |
+| LibreOffice | 100% | Preserved as drawing objects (0 in python-docx API) | Preserved | Detected and converted | Highest fidelity, needs soffice binary (~200MB) |
+| pdf2docx | 100% | Reconstructed as Word tables | Repositioned | Detected and converted | O(n^2) table detection, fails on dense tables |
+| Docling | 100% | Partial (ML-based) | No | v2 (ML layout provenance) | Slow, research/experimental |
+| Tesseract | 96-100% | No detection, flat text | No (rasterized away) | v2 (OCR bounding boxes) | Only option for scanned PDFs |
 
-Tesseract OCR accuracy (re-reads text from rasterized images):
-
-| Scenario | Seq Match | Word Recall |
-|----------|-----------|-------------|
-| Text-only | 62.8% | 100% |
-| Simple tables | 74.5% | 96.0% |
-| Dense tables | 98.2% | 100% |
-| Mixed content | 91.4% | 95.9% |
-| Two-column MSA | 100% | 99.5% |
-
-All other libraries extract native PDF text (100% word recall by definition).
+Word recall = % of ground truth words found in converted DOCX. All libraries except Tesseract extract native PDF text (100%). Tesseract re-reads from rasterized images: 100% (text-only, dense tables), 99.5% (two-col MSA), 96% (simple tables), 95.9% (mixed).
 
 ## Recommendation
 
