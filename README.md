@@ -32,6 +32,23 @@
 
 Word recall = % of ground truth words found in converted DOCX. All libraries except Tesseract extract native PDF text (100%). Tesseract re-reads from rasterized images: 100% (text-only, dense tables), 99.5% (two-col MSA), 96% (simple tables), 95.9% (mixed).
 
+## Structural Recall
+
+How well each converter preserves document structure (tables, headings, columns, image placement, reading order) — not just text content. Scored by manual inspection across all test scenarios.
+
+| Library | Structural Recall | Notes |
+|---------|:-----------------:|-------|
+| PyMuPDF | **22%** | Flat text dump — no tables, no columns, no layout awareness |
+| pdfplumber | **52%** | Tables detected via line intersections, but no images or column handling |
+| Camelot | **58%** | Best table detection (lattice + stream), but no images or column layout |
+| LibreOffice | **95%** ⚠️ | Tables, images, fonts, columns all preserved — but every word is its own text box. Document *looks* correct but is uneditable (can't select paragraphs, reflow text, or make normal edits) |
+| pdf2docx | **55%** | Reconstructs Word tables + images, detects columns, but O(n²) breaks on dense tables |
+| Docling | **28%** | ML-based layout is experimental — partial tables, no images, inconsistent headings |
+| Tesseract | **20%** | OCR bounding boxes only — no table, column, or image structure preserved |
+| Adobe PDF Services | **87%** | Native Word tables, images preserved, columns handled. Clean editable output with real paragraphs (0 VML boxes on simple docs) |
+
+> **Why does LibreOffice score 95% but get a warning?** Structural recall measures whether layout elements *exist* in the output — and soffice gets nearly everything right. But the output wraps every word in a VML/WPS drawing object, making the DOCX a collection of positioned text boxes rather than flowing text. If your use case is read-only viewing or PDF archival, soffice is the best. If you need an editable document, Adobe (87%) or pdf2docx (55%) produce actually usable Word files.
+
 ## Recommendation
 
 | Use Case | Library | Why |
