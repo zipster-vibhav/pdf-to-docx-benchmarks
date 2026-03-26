@@ -186,8 +186,8 @@ def convert_single(pdf_path: Path, out_dir: Path, client_id: str, client_secret:
 
 
 def main():
-    CLIENT_ID = os.environ.get("ADOBE_CLIENT_ID", "YOUR_CLIENT_ID")
-    CLIENT_SECRET = os.environ.get("ADOBE_CLIENT_SECRET", "YOUR_CLIENT_SECRET")
+    CLIENT_ID = os.environ.get("ADOBE_CLIENT_ID", "")
+    CLIENT_SECRET = os.environ.get("ADOBE_CLIENT_SECRET", "")
 
     parser = argparse.ArgumentParser(description="Convert PDF(s) to DOCX using Adobe API")
     parser.add_argument(
