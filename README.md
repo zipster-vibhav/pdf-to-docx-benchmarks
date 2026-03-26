@@ -1,6 +1,6 @@
 # PDF to DOCX Conversion Benchmarks
 
-7 libraries benchmarked on 60-page PDFs against a 90-second Celery task timeout. Test scenarios: text-only, simple tables (1 per page, 5x4), dense tables (3 per page, 8x6, 180 total), mixed content (text + image + table), and two-column MSA contract (~18 pages).
+8 libraries benchmarked on 60-page PDFs against a 90-second Celery task timeout. Test scenarios: text-only, simple tables (1 per page, 5x4), dense tables (3 per page, 8x6, 180 total), mixed content (text + image + table), and two-column MSA contract (~18 pages).
 
 ## Results
 
@@ -13,8 +13,9 @@
 | **pdf2docx** | GPL-3.0 | 1.72s | 5.09s | **101.4s** | 8.52s | 2.39s |
 | **Docling** | MIT | 11.3s | 22.7s | 10.4s | 28.3s | 4.3s |
 | **Tesseract OCR** | Apache-2.0 | **103.8s** | 28.0s | 50.3s | 32.3s | 26.0s |
+| **Adobe PDF Services** | Commercial | 5.4s* | 6.9s* | — | 6.7s* | 5.4s* |
 
-**Bold** = exceeds 90s timeout.
+**Bold** = exceeds 90s timeout. *Adobe tested on real contract PDFs (not synthetic), see `adobe/` for details.
 
 ## Quality
 
@@ -27,6 +28,7 @@
 | pdf2docx | 100% | Reconstructed as Word tables | Repositioned | Detected and converted | O(n^2) table detection, fails on dense tables |
 | Docling | 100% | Partial (ML-based) | No | v2 (ML layout provenance) | Slow, research/experimental |
 | Tesseract | 96-100% | No detection, flat text | No (rasterized away) | v2 (OCR bounding boxes) | Only option for scanned PDFs |
+| Adobe PDF Services | 94-98% | Preserved as Word tables | Preserved | Preserved natively | Commercial API, OCR support, 5-7s per doc |
 
 Word recall = % of ground truth words found in converted DOCX. All libraries except Tesseract extract native PDF text (100%). Tesseract re-reads from rasterized images: 100% (text-only, dense tables), 99.5% (two-col MSA), 96% (simple tables), 95.9% (mixed).
 
@@ -39,6 +41,7 @@ Word recall = % of ground truth words found in converted DOCX. All libraries exc
 | Balanced (speed + tables + MIT) | pdfplumber | 1-7s, tables preserved, MIT licensed |
 | Scanned PDFs | Tesseract | Only option for PDFs without a text layer |
 | Avoid for dense tables | pdf2docx | Exceeds 90s timeout on table-heavy docs |
+| Highest quality (commercial) | Adobe PDF Services | 5-7s, best formatting fidelity, OCR support, $0.05/doc |
 
 ## Repo Structure
 
@@ -46,13 +49,15 @@ Each library has a `benchmark.ipynb` and `outputs/` directory with generated PDF
 
 ```
 pymupdf/    pdfplumber/    camelot/    libreoffice/
-pdf2docx/   docling/       tesseract/  final_comparison.ipynb
+pdf2docx/   docling/       tesseract/  adobe/
+final_comparison.ipynb
 ```
 
 ## Running
 
 ```bash
 pip install pdf2docx pdfplumber python-docx pypdf PyMuPDF camelot-py[cv] \
-            docling htmldocx reportlab matplotlib pytesseract pdf2image
+            docling htmldocx reportlab matplotlib pytesseract pdf2image \
+            pdfservices-sdk  # Adobe PDF Services
 brew install tesseract poppler libreoffice  # macOS
 ```
