@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF-to-DOCX Benchmark: Interactive Comparison</title>
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #ffffff;
+            color: #1a1a1a;
+            padding: 32px 40px;
+        }
+        .header {
+            margin-bottom: 24px;
+        }
+        h1 {
+            font-size: 20px;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            color: #111;
+        }
+        .subtitle {
+            font-size: 13px;
+            color: #888;
+            margin-top: 6px;
+            line-height: 1.5;
+        }
+        .subtitle span {
+            display: inline-block;
+            background: #f3f4f6;
+            border-radius: 4px;
+            padding: 1px 6px;
+            font-size: 12px;
+            color: #555;
+            margin: 0 2px;
+        }
+        #chart {
+            width: 100%;
+            height: 500px;
+            border: 1px solid #eee;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 14px;
+            padding: 0 4px;
+        }
+        .legend {
+            display: flex;
+            gap: 20px;
+            font-size: 12px;
+            color: #666;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+        .hint {
+            font-size: 11px;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>PDF-to-DOCX Conversion: Library Comparison</h1>
+        <p class="subtitle">
+            <span>X</span> Conversion speed
+            &nbsp;&middot;&nbsp;
+            <span>Y</span> Structural recall
+            &nbsp;&middot;&nbsp;
+            <span>Size</span> Word recall
+            &nbsp;&middot;&nbsp;
+            Hover any bubble for full details
+        </p>
+    </div>
+    <div id="chart"></div>
+    <div class="footer">
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-dot" style="background: #16a34a;"></div>
+                Viable
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background: #dc2626;"></div>
+                Blocked (uneditable)
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot" style="background: #c4b5fd;"></div>
+                Not viable
+            </div>
+        </div>
+        <div class="hint">Scroll to zoom &middot; Drag to pan</div>
+    </div>
+
+    <script>
+        const libraries = [
+            {
+                name: 'Adobe PDF Services',
+                speed: 5, wordRecall: 96, structuralRecall: 95,
+                viable: true, editable: true,
+                note: 'Commercial API. Clean editable output, native Word tables.',
+                color: '#16a34a', borderColor: '#15803d'
+            },
+            {
+                name: 'LibreOffice',
+                speed: 10, wordRecall: 97, structuralRecall: 96,
+                viable: false, editable: false,
+                note: 'Every word is its own text box. Looks correct but uneditable.',
+                color: '#dc2626', borderColor: '#b91c1c'
+            },
+            {
+                name: 'PyMuPDF',
+                speed: 0, wordRecall: 100, structuralRecall: 22,
+                viable: false, editable: true,
+                note: 'AGPL-3.0 license. Flat text dump, no structure.',
+                color: '#c4b5fd', borderColor: '#a78bfa'
+            },
+            {
+                name: 'pdfplumber',
+                speed: 5, wordRecall: 100, structuralRecall: 52,
+                viable: false, editable: true,
+                note: 'MIT. Tables via line detection, no images or columns.',
+                color: '#c4b5fd', borderColor: '#a78bfa'
+            },
+            {
+                name: 'Camelot',
+                speed: 5, wordRecall: 100, structuralRecall: 58,
+                viable: false, editable: true,
+                note: 'MIT. Best OSS table detection, but no images or columns.',
+                color: '#c4b5fd', borderColor: '#a78bfa'
+            },
+            {
+                name: 'pdf2docx',
+                speed: 25, wordRecall: 100, structuralRecall: 55,
+                viable: false, editable: true,
+                note: 'GPL-3.0. Exceeds 90s timeout on dense tables.',
+                color: '#c4b5fd', borderColor: '#a78bfa'
+            },
+            {
+                name: 'Docling',
+                speed: 15, wordRecall: 100, structuralRecall: 28,
+                viable: false, editable: true,
+                note: 'MIT. ML-based, experimental. Partial tables, no images.',
+                color: '#c4b5fd', borderColor: '#a78bfa'
+            },
+            {
+                name: 'Tesseract',
+                speed: 50, wordRecall: 98, structuralRecall: 20,
+                viable: false, editable: true,
+                note: 'Apache-2.0. OCR only. No structure preserved.',
+                color: '#c4b5fd', borderColor: '#a78bfa'
+            }
+        ];
+
+        const minBubble = 25;
+        const maxBubble = 50;
+
+        const trace = {
+            x: libraries.map(l => l.speed),
+            y: libraries.map(l => l.structuralRecall),
+            text: libraries.map(l => l.name),
+            customdata: libraries.map(l => [
+                l.wordRecall, l.note,
+                l.viable ? 'Yes' : 'No',
+                l.editable ? 'Yes' : 'No'
+            ]),
+            hovertemplate:
+                '<b style="font-size:14px">%{text}</b><br><br>' +
+                '<b>Speed:</b> %{x}s<br>' +
+                '<b>Structural Recall:</b> %{y}%<br>' +
+                '<b>Word Recall:</b> %{customdata[0]}%<br>' +
+                '<b>Editable:</b> %{customdata[3]}<br>' +
+                '<b>Viable:</b> %{customdata[2]}<br><br>' +
+                '<i>%{customdata[1]}</i>' +
+                '<extra></extra>',
+            mode: 'markers+text',
+            textposition: libraries.map(l => {
+                if (l.name === 'LibreOffice') return 'bottom right';
+                if (l.name === 'Adobe PDF Services') return 'top left';
+                if (l.name === 'PyMuPDF') return 'top center';
+                if (l.name === 'Tesseract') return 'top center';
+                if (l.name === 'Camelot') return 'top center';
+                if (l.name === 'pdfplumber') return 'bottom center';
+                if (l.name === 'pdf2docx') return 'top center';
+                return 'top center';
+            }),
+            textfont: {
+                size: libraries.map(l => l.viable ? 13 : 11),
+                color: libraries.map(l => {
+                    if (l.viable) return '#15803d';
+                    if (!l.editable) return '#b91c1c';
+                    return '#7c3aed';
+                }),
+                family: 'Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif',
+                weight: libraries.map(l => l.viable ? 600 : 400)
+            },
+            marker: {
+                size: libraries.map(l => {
+                    const normalized = (l.wordRecall - 90) / 10;
+                    return minBubble + normalized * (maxBubble - minBubble);
+                }),
+                color: libraries.map(l => {
+                    if (l.viable) return 'rgba(22, 163, 74, 0.18)';
+                    if (!l.editable) return 'rgba(220, 38, 38, 0.15)';
+                    return 'rgba(139, 92, 246, 0.12)';
+                }),
+                line: {
+                    color: libraries.map(l => l.borderColor),
+                    width: libraries.map(l => l.viable ? 2.5 : !l.editable ? 2.5 : 1.5)
+                }
+            },
+            type: 'scatter'
+        };
+
+        const layout = {
+            xaxis: {
+                title: { text: 'Conversion Speed (seconds)', font: { size: 12, color: '#888' } },
+                range: [-3, 55],
+                dtick: 5,
+                gridcolor: '#f3f4f6',
+                gridwidth: 1,
+                zeroline: false,
+                tickfont: { size: 11, color: '#aaa' },
+                ticksuffix: 's',
+                linecolor: '#e5e7eb',
+                showline: true,
+            },
+            yaxis: {
+                title: { text: 'Structural Recall', font: { size: 12, color: '#888' } },
+                range: [10, 105],
+                dtick: 10,
+                gridcolor: '#f3f4f6',
+                gridwidth: 1,
+                zeroline: false,
+                tickfont: { size: 11, color: '#aaa' },
+                ticksuffix: '%',
+                linecolor: '#e5e7eb',
+                showline: true,
+            },
+            plot_bgcolor: '#ffffff',
+            paper_bgcolor: '#ffffff',
+            margin: { l: 56, r: 24, t: 16, b: 48 },
+            showlegend: false,
+            hoverlabel: {
+                bgcolor: '#1a1a1a',
+                bordercolor: '#1a1a1a',
+                font: { family: 'Inter, sans-serif', size: 12, color: '#fff' },
+                align: 'left'
+            },
+            annotations: [
+                {
+                    x: 52,
+                    y: 100,
+                    xref: 'x', yref: 'y',
+                    text: 'faster + better structure = top-left',
+                    showarrow: false,
+                    font: { size: 10, color: '#ccc', family: 'Inter, sans-serif' }
+                }
+            ],
+            shapes: [
+                // Viable zone highlight
+                {
+                    type: 'rect',
+                    xref: 'x', yref: 'y',
+                    x0: -3, x1: 15, y0: 85, y1: 105,
+                    fillcolor: 'rgba(22, 163, 74, 0.03)',
+                    line: { color: 'rgba(22, 163, 74, 0.12)', width: 1, dash: 'dot' }
+                }
+            ]
+        };
+
+        const config = {
+            displayModeBar: false,
+            responsive: true
+        };
+
+        Plotly.newPlot('chart', [trace], layout, config);
+    </script>
+</body>
+</html>
