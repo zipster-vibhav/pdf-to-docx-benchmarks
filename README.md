@@ -41,24 +41,24 @@ How well each converter preserves document structure (tables, headings, columns,
 | PyMuPDF | **22%** | Flat text dump — no tables, no columns, no layout awareness |
 | pdfplumber | **52%** | Tables detected via line intersections, but no images or column handling |
 | Camelot | **58%** | Best table detection (lattice + stream), but no images or column layout |
-| LibreOffice | **95%** ⚠️ | Tables, images, fonts, columns all preserved — but every word is its own text box. Document *looks* correct but is uneditable (can't select paragraphs, reflow text, or make normal edits) |
+| LibreOffice | **96%** ⚠️ | Tables, images, fonts, columns all preserved — but every word is its own text box. Document *looks* correct but is uneditable (can't select paragraphs, reflow text, or make normal edits) |
 | pdf2docx | **55%** | Reconstructs Word tables + images, detects columns, but O(n²) breaks on dense tables |
 | Docling | **28%** | ML-based layout is experimental — partial tables, no images, inconsistent headings |
 | Tesseract | **20%** | OCR bounding boxes only — no table, column, or image structure preserved |
-| Adobe PDF Services | **87%** | Native Word tables, images preserved, columns handled. Clean editable output with real paragraphs (0 VML boxes on simple docs) |
+| Adobe PDF Services | **95%** | Native Word tables, images preserved, columns handled. Clean editable output with real paragraphs (0 VML boxes on simple docs) |
 
-> **Why does LibreOffice score 95% but get a warning?** Structural recall measures whether layout elements *exist* in the output — and soffice gets nearly everything right. But the output wraps every word in a VML/WPS drawing object, making the DOCX a collection of positioned text boxes rather than flowing text. If your use case is read-only viewing or PDF archival, soffice is the best. If you need an editable document, Adobe (87%) or pdf2docx (55%) produce actually usable Word files.
+> **Why does LibreOffice score 96% but get a warning?** Structural recall measures whether layout elements *exist* in the output — and soffice gets nearly everything right. But the output wraps every word in a VML/WPS drawing object, making the DOCX a collection of positioned text boxes rather than flowing text. If your use case is read-only viewing or PDF archival, soffice is the best. Adobe matches at 95% structural recall *and* produces clean, editable Word files — making it the clear winner for any use case that requires an actual usable document.
 
 ## Recommendation
 
 | Use Case | Library | Why |
 |----------|---------|-----|
-| Highest fidelity | LibreOffice | Native tables, images, fonts, columns. 2-14s. |
-| Speed-critical | PyMuPDF | 0.1-0.6s, 10-100x faster than alternatives |
+| **Best overall** | **Adobe PDF Services** | **95% structural recall with clean, editable output. 5-7s, native tables/images/columns, OCR support. The only converter that matches LibreOffice fidelity without the text-box problem.** |
+| Highest fidelity (read-only) | LibreOffice | 96% structural recall, but output is uneditable — every word is a text box. Fine for viewing, not for editing. |
+| Speed-critical | PyMuPDF | 0.1-0.6s, 10-100x faster than alternatives. No structure preservation. |
 | Balanced (speed + tables + MIT) | pdfplumber | 1-7s, tables preserved, MIT licensed |
 | Scanned PDFs | Tesseract | Only option for PDFs without a text layer |
 | Avoid for dense tables | pdf2docx | Exceeds 90s timeout on table-heavy docs |
-| Highest quality (commercial) | Adobe PDF Services | 5-7s, best formatting fidelity, OCR support, $0.05/doc |
 
 ## Repo Structure
 
