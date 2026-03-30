@@ -1,0 +1,10 @@
+# Build artifacts
+.venv/
+__pycache__/
+*.pyc
+run_benchmark.py
+run_final.py
+build_notebook.py
+
+# Real documents (never commit client contracts)
+adobe/outputs/*.docx

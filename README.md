@@ -13,24 +13,62 @@
 | **pdf2docx** | GPL-3.0 | 1.72s | 5.09s | **101.4s** | 8.52s | 2.39s |
 | **Docling** | MIT | 11.3s | 22.7s | 10.4s | 28.3s | 4.3s |
 | **Tesseract OCR** | Apache-2.0 | **103.8s** | 28.0s | 50.3s | 32.3s | 26.0s |
-| **Adobe PDF Services** | Commercial | 5.4s* | 6.9s* | — | 6.7s* | 5.4s* |
+| **Adobe PDF Services** | Commercial | 5.4s | 6.9s | — | 6.7s | 5.4s |
 
-**Bold** = exceeds 90s timeout. *Adobe tested on real contract PDFs (not synthetic), see `adobe/` for details.
+**Bold** = exceeds 90s timeout.
 
-## Quality
+## Quality — Unified Benchmark
 
-| Library | Word Recall | Tables | Images | Two-Column | Notes |
-|---------|-------------|--------|--------|------------|-------|
-| PyMuPDF | 100% | No detection, flat text | Extractable | v2 (coordinate-based) | Fastest, text-only extraction |
-| pdfplumber | 100% | Detected via line intersections | No | v2 (word bounding boxes) | MIT, good table detection |
-| Camelot | 100% | Lattice + stream detection | No | v2 (pdfminer bounding boxes) | Best for table-heavy docs |
-| LibreOffice | 100% | Preserved as drawing objects (0 in python-docx API) | Preserved | Detected and converted | Highest fidelity, needs soffice binary (~200MB) |
-| pdf2docx | 100% | Reconstructed as Word tables | Repositioned | Detected and converted | O(n^2) table detection, fails on dense tables |
-| Docling | 100% | Partial (ML-based) | No | v2 (ML layout provenance) | Slow, research/experimental |
-| Tesseract | 96-100% | No detection, flat text | No (rasterized away) | v2 (OCR bounding boxes) | Only option for scanned PDFs |
-| Adobe PDF Services | 94-98% | Preserved as Word tables | Preserved | Preserved natively | Commercial API, OCR support, 5-7s per doc |
+All 8 libraries tested on the **same 5 synthetic PDFs** with the **same ground truth** text. See `unified_benchmark.ipynb` for the full methodology.
 
-Word recall = % of ground truth words found in converted DOCX. All libraries except Tesseract extract native PDF text (100%). Tesseract re-reads from rasterized images: 100% (text-only, dense tables), 99.5% (two-col MSA), 96% (simple tables), 95.9% (mixed).
+We measure two word recall metrics:
+
+- **Word Recall (relaxed):** Strip all punctuation, compare pure alphanumeric words. Answers: *did the converter capture the actual content?*
+- **Word Recall (strict):** Keep punctuation as-is, exact token matching. Answers: *did the converter preserve formatting, punctuation, and structure?*
+
+### Word Recall (relaxed)
+
+| Library | Plain Text | Tables | Images | Two-Col MSA | Mixed | AVG |
+|---------|-----------|--------|--------|-------------|-------|-----|
+| PyMuPDF | 100% | 100% | 100% | 100% | 100% | **100%** |
+| pdfplumber | 100% | 100% | 100% | 100% | 100% | **100%** |
+| Camelot | 100% | 100% | 100% | 100% | 100% | **100%** |
+| LibreOffice | 100% | 100% | 100% | 100% | 100% | **100%** |
+| pdf2docx | 100% | 100% | 100% | 100% | 100% | **100%** |
+| Docling | 100% | 100% | 100% | 100% | 100% | **100%** |
+| Adobe PDF Services | 100% | 100% | 100% | 98.9% | 100% | **99.8%** |
+| Tesseract | 97.4% | 100% | 97.1% | 100% | 100% | **98.9%** |
+
+### Word Recall (strict)
+
+| Library | Plain Text | Tables | Images | Two-Col MSA | Mixed | AVG |
+|---------|-----------|--------|--------|-------------|-------|-----|
+| PyMuPDF | 100% | 100% | 100% | 100% | 100% | **100%** |
+| pdfplumber | 100% | 100% | 100% | 100% | 100% | **100%** |
+| Camelot | 100% | 100% | 100% | 100% | 100% | **100%** |
+| LibreOffice | 100% | 100% | 100% | 100% | 100% | **100%** |
+| pdf2docx | 100% | 100% | 100% | 100% | 100% | **100%** |
+| Docling | 100% | 100% | 100% | 100% | 100% | **100%** |
+| Tesseract | 98.0% | 100% | 97.4% | 99.5% | 100% | **99.0%** |
+| Adobe PDF Services | 100% | 93.3% | 100% | 97.5% | 100% | **98.2%** |
+
+> **Why does Adobe's strict recall drop on tables/two-col?** Adobe collapses repeating per-page headings into DOCX headers using `{PAGE}` field codes — visually correct, but some punctuated tokens (e.g., `"Section 7:"`) are lost as distinct words when the header stores only the last page's value. The relaxed metric confirms all actual words are captured.
+>
+> **Why does Tesseract lose words?** It OCRs from rasterized images rather than extracting native text, introducing character recognition errors.
+
+### Methodology
+
+The unified benchmark (`unified_benchmark.ipynb`) generates 5 synthetic PDFs with known ground truth text, then runs all 8 libraries against the same inputs:
+
+| PDF | Pages | Features |
+|-----|-------|----------|
+| `plain_text` | 10 | Headings + 20 body paragraphs per page |
+| `tables_and_text` | 10 | Text + bordered 5x4 tables |
+| `logo_and_images` | 10 | Text + embedded PNG logo + photo images |
+| `two_column_msa` | 5 | Two-column legal MSA layout (ReportLab) |
+| `mixed_everything` | 10 | Text + logo image + 4x3 table per page |
+
+Text extraction uses XML-level `<w:t>` parsing across all DOCX files (document.xml + headers + footers), with `{PAGE}` field code expansion for Adobe's dynamic headers.
 
 ## Structural Recall
 
@@ -62,11 +100,12 @@ How well each converter preserves document structure (tables, headings, columns,
 
 ## Repo Structure
 
-Each library has a `benchmark.ipynb` and `outputs/` directory with generated PDFs and converted DOCXs.
+Each library has a `benchmark.ipynb` and `outputs/` directory with generated PDFs and converted DOCXs. The unified benchmark tests all libraries on the same synthetic PDFs.
 
 ```
 pymupdf/    pdfplumber/    camelot/    libreoffice/
 pdf2docx/   docling/       tesseract/  adobe/
+unified_benchmark.ipynb     # All 8 libraries, same PDFs, same ground truth
 final_comparison.ipynb
 ```
 
